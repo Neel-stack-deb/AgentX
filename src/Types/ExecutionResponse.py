@@ -1,4 +1,4 @@
 from pydantic import BaseModel
 #TODO
-class Response(BaseModel):
+class ExecutionResponse(BaseModel):
   content: str

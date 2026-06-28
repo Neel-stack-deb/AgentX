@@ -1,12 +1,12 @@
 from pydantic import BaseModel
-from Types import CurrentExecutionContext
+from Types.TaskExecution import TaskExecution
 from Types.Goal import Goal
 from Types.Scratchpad import Scratchpad
 from Types.Plan import Plan
-class AgentState(BaseModel):
+class ExecutionContext(BaseModel):
   goal: Goal
-  plans:list[Plan]
-  current_execution_context: CurrentExecutionContext | None = None
+  plans:Plan
+  current_task_execution: TaskExecution | None = None
   scratchpad: Scratchpad | None = None
 
 
