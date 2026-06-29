@@ -7,9 +7,10 @@ class PlanStepStatus(str, Enum):
   FAILED = "failed"
 
 class ExecutionStatus(str, Enum):
-  RUNNING = "running"
-  COMPLETED = "completed"
-  FAILED = "falied"
+    CREATED = "created"
+    RUNNING = "running"
+    FINISHED = "finished"
+    FAILED = "failed"
   
 class PromptTemplate(str, Enum):
     PLANNER = "planner"
