@@ -1,12 +1,15 @@
 from abc import ABC, abstractmethod
 
+from Core import ExecutionContext, PromptBuilder
+from Types import NodeResult
+from llm import LLMClient
 class BaseNode(ABC):
 
-  def __init__(self, nodeName, nodeDescription) -> None:
-    self.nodeName = nodeName
-    self.nodeDescription = nodeDescription
+  def __init__(self, llm: LLMClient, promptBuilder: PromptBuilder) -> None:
+    self.llm = llm
+    self.promptBuilder = promptBuilder
 
   @abstractmethod
-  def run(self,*args,**kwargs):
+  def run(self,context:ExecutionContext)->NodeResult:
     pass
 
