@@ -6,24 +6,26 @@ class Event(BaseModel):
   timestamp: datetime
 
 class GoalReceived(Event):
-    pass
-
+  artifact_id: str
+  
 
 class PlanCreated(Event):
-    pass
+  artifact_id: str
 
-
+  
 class TaskStarted(Event):
-    step_id: int
+  step_id: int
 
 
 class TaskCompleted(Event):
-    step_id: int
-
+  step_id: int
+  artifact_id: str
+  
 
 class ReflectionCompleted(Event):
-    step_id: int
+  step_id: int
+  artifact_id: str
 
 
 class ExecutionFinished(Event):
-    success: bool
+  success: bool
