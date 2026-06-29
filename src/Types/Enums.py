@@ -11,3 +11,7 @@ class ExecutionStatus(str, Enum):
   COMPLETED = "completed"
   FAILED = "falied"
   
+class PromptTemplate(str, Enum):
+    PLANNER = "planner"
+    EXECUTOR = "executor"
+    REFLECTOR = "reflector"
