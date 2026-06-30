@@ -1,4 +1,6 @@
 from pydantic import BaseModel
-#TODO
+
+
+# TODO
 class Reflection(BaseModel):
-  content: str
+    content: str

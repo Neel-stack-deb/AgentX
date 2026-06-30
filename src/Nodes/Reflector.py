@@ -5,15 +5,11 @@ from Types.Enums import PromptTemplate
 
 
 class Reflector(BaseNode):
-  async def run(self,context:ExecutionContext)->ReflectorResult:
-    prompt = self.promptBuilder.build(
-      context= context,
-      template = PromptTemplate.REFLECTOR
-    )
+    async def run(self, context: ExecutionContext) -> ReflectorResult:
+        prompt = self.promptBuilder.build(
+            context=context, template=PromptTemplate.REFLECTOR
+        )
 
-    reflection = await self.llm.generate(
-      prompt,
-      output_mode = Reflection
-    )
+        reflection = await self.llm.generate(prompt, output_mode=Reflection)
 
-    return ReflectorResult(reflection=reflection)
+        return ReflectorResult(reflection=reflection)

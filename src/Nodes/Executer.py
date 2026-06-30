@@ -5,18 +5,13 @@ from Types.Enums import PromptTemplate
 
 
 class Executer(BaseNode):
-  async def run(self,context:ExecutionContext)->ExecuterResult:
-    prompt = self.promptBuilder.build(
-      context = context,
-      template = PromptTemplate.EXECUTOR
-    )
+    async def run(self, context: ExecutionContext) -> ExecuterResult:
+        prompt = self.promptBuilder.build(
+            context=context, template=PromptTemplate.EXECUTOR
+        )
 
-    executionResponse = await self.llm.generate(
-      prompt,
-      output_model = ExecutionResponse
-    )
+        executionResponse = await self.llm.generate(
+            prompt, output_model=ExecutionResponse
+        )
 
-    return ExecuterResult(executionResponse=executionResponse)
-
-
-
+        return ExecuterResult(executionResponse=executionResponse)

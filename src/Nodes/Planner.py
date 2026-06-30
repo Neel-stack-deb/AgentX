@@ -5,15 +5,9 @@ from Types.Enums import PromptTemplate
 
 
 class Planner(BaseNode):
-  async def run(self, context:ExecutionContext)->PlannerResult:
-    prompt = self.promptBuilder.build(
-      context=context,
-      template=PromptTemplate.PLANNER
-    )
-    plan = await self.llm.generate(
-      prompt,
-      output_model = Plan
-      )
-    return PlannerResult(plan=plan)
-     
-    
+    async def run(self, context: ExecutionContext) -> PlannerResult:
+        prompt = self.promptBuilder.build(
+            context=context, template=PromptTemplate.PLANNER
+        )
+        plan = await self.llm.generate(prompt, output_model=Plan)
+        return PlannerResult(plan=plan)

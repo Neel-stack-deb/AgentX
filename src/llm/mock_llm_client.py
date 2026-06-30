@@ -11,11 +11,7 @@ from Types.Reflection import Reflection
 
 class MockLLMClient(BaseLLMClient):
 
-    async def generate(
-        self,
-        prompt: str,
-        output_model: type[BaseModel]
-    ) -> BaseModel:
+    async def generate(self, prompt: str, output_model: type[BaseModel]) -> BaseModel:
 
         if output_model == Plan:
 
@@ -36,16 +32,10 @@ class MockLLMClient(BaseLLMClient):
 
         if output_model == ExecutionResponse:
 
-            return ExecutionResponse(
-                content="Task completed successfully."
-            )
+            return ExecutionResponse(content="Task completed successfully.")
 
         if output_model == Reflection:
 
-            return Reflection(
-                content="Execution looks correct."
-            )
+            return Reflection(content="Execution looks correct.")
 
-        raise ValueError(
-            f"Unsupported output model: {output_model}"
-        )
+        raise ValueError(f"Unsupported output model: {output_model}")
