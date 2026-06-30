@@ -1,6 +1,8 @@
 from pydantic import BaseModel
 
+from Types.Enums import ReflectionDecision
 
-# TODO
+
 class Reflection(BaseModel):
+    decision: ReflectionDecision
     content: str
