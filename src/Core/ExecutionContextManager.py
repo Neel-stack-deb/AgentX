@@ -2,10 +2,12 @@ from pydantic import ValidationError
 from Core import ExecutionContext
 from Types import (
     ExecuterResult,
+    Goal,
     NodeResult,
     Plan,
     PlannerResult,
     ReflectorResult,
+    Scratchpad,
     TaskExecution,
 )
 from Types.Enums import PlanStepStatus, ReflectionDecision
@@ -20,7 +22,24 @@ class ExecutionContextManager:
             ReflectorResult: self._apply_reflector,
         }
 
+    def initialize(
+        self,
+        goal: Goal,
+    ) -> ExecutionContext:
+        """
+        This function is responsible for creating the Execution Context instance for a given Goal.
+        """
+
+        return ExecutionContext(
+            goal=goal,
+            scratchpad=Scratchpad(),
+        )
+
     def apply(self, context: ExecutionContext, result: NodeResult) -> ExecutionContext:
+        """
+        This function is responsible for creting new instances of the immutable Execution Context.
+        It is used in transitioning from one state to other.
+        """
         handler = self.handlers.get(type(result))
         if handler is None:
             raise ValueError(f"No handler registered for {type(result).__name__}")
