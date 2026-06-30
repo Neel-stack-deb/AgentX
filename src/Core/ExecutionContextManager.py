@@ -41,7 +41,7 @@ class ExecutionContextManager:
         self, context: ExecutionContext, result: ExecuterResult
     ) -> ExecutionContext:
         task_execution = TaskExecution(
-            step_id=context.plan.next_pending_step().step_id,
+            step_id=result.step.step_id,
             current_response=result.executionResponse,
             current_reflection=None,
         )
