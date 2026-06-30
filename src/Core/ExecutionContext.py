@@ -7,6 +7,6 @@ from Types.Plan import Plan
 
 class ExecutionContext(BaseModel):
     goal: Goal
-    plan: Plan
+    plan: Plan | None = None
     current_task_execution: TaskExecution | None = None
     scratchpad: Scratchpad | None = None
