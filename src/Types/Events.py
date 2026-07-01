@@ -1,10 +1,10 @@
 import datetime
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class Event(BaseModel):
     execution_id: str
-    timestamp: datetime
+    timestamp: datetime | Field(default_factory=datetime.now)
 
 
 class GoalReceived(Event):
