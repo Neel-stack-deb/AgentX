@@ -17,4 +17,5 @@ class PlanArtifact(Artifact):
 class ExecutionArtifact(Artifact):
     step_id: str
     response: ExecutionResponse
-    reflection: Reflection
+    reflection: Reflection | None
+
