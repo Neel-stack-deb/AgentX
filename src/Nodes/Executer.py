@@ -14,4 +14,5 @@ class Executer(BaseNode):
             prompt, output_model=ExecutionResponse
         )
 
-        return ExecuterResult(executionResponse=executionResponse)
+        return ExecuterResult(
+            executionResponse=executionResponse)
