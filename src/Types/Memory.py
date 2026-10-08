@@ -28,6 +28,9 @@ class Memory(BaseModel):
     - source: optional provenance (e.g. execution_id, user, import)
     - importance: optional 0..1 hint for future ranking (unused in v1 retrieval)
     - status: soft-delete via DELETED without dropping audit trails in MemoryStore
+    - embedding_model / embedding_version / embedding_dimension: which index produced the vector
+    - project_id / scope: optional tenancy or partition for retrieval filters
+    - superseded_by_memory_id: when set, memory is stale; excluded from default retrieval
     """
 
     memory_id: str = Field(default_factory=lambda: str(uuid4()))
@@ -38,6 +41,12 @@ class Memory(BaseModel):
     source: str | None = None
     importance: float | None = Field(default=None, ge=0.0, le=1.0)
     status: MemoryStatus = MemoryStatus.ACTIVE
+    project_id: str | None = None
+    scope: str | None = None
+    embedding_model: str | None = None
+    embedding_version: str | None = None
+    embedding_dimension: int | None = None
+    superseded_by_memory_id: str | None = None
 
 
 class ScoredMemory(BaseModel):

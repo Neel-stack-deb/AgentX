@@ -2,7 +2,7 @@
 
 ## Version
 
-**0.2.0-dev** — Module 2 (Agent Memory) vector foundation in progress.
+**0.2.1-dev** — Module 2 vector memory foundation + production-readiness pass.
 
 ## Module 1 — Core agent loop (existing)
 
@@ -25,12 +25,14 @@
 
 | Component | Status | Notes |
 |-----------|--------|-------|
-| Memory domain (`Types/Memory.py`) | **Done (v1)** | Memory, MemoryType, MemoryStatus, ScoredMemory |
-| EmbeddingProvider | **Done (v1)** | ABC + `HashEmbeddingProvider` for dev/tests |
-| VectorStore | **Done (v1)** | ABC + `InMemoryVectorStore`, cosine top-K |
+| Memory domain (`Types/Memory.py`) | **Done (v1.1)** | + embedding tags, `project_id`/`scope`, supersede field |
+| EmbeddingProvider | **Done (v1.1)** | `model_name` / `model_version` + `HashEmbeddingProvider` |
+| VectorStore | **Done (v1.1)** | `BruteForceVectorStore`, filters, `VectorSearchStrategy` |
 | MemoryStore | **Done (v1)** | ABC + `InMemoryMemoryStore`, soft delete |
-| MemoryRetriever | **Done (v1)** | `VectorMemoryRetriever` |
-| MemoryManager | **Done (v1)** | remember / retrieve / update / delete |
+| MemoryRetriever | **Done (v1.1)** | `MemoryRetrievalFilter` on retrieve |
+| MemoryManager | **Done (v1.1)** | + `supersede`, filtered retrieve |
+| Retrieval contracts | **Done (v1.1)** | `Memory/retrieval.py` |
+| ANN (HNSW / IVF) | Not implemented | Future `VectorStore` backends only |
 | Orchestrator integration | **Done (v1)** | Optional retrieve before planning |
 | Knowledge graph memory | Not started | Out of scope for this milestone |
 | Hybrid memory | Not started | Out of scope |
@@ -38,9 +40,11 @@
 
 ## Vector memory — current behavior
 
-- Inject `MemoryManager` into `Orchestrator` to retrieve top-K memories from `goal.description` before the planner runs.
-- Results are attached via `ExecutionContextManager.with_retrieved_memories`.
-- `PromptBuilder` surfaces memories in the planner prompt only.
+- **Foundation (v1):** Orchestrator optional retrieve → `with_retrieved_memories` → planner prompt.
+- **Retrieval (v1.1):** Brute-force cosine **O(N×D)** over in-memory `VectorIndexRecord` entries; optional `MemoryRetrievalFilter` (`project_id`, `scope`, `memory_type`, `status`, embedding model/version).
+- **ANN readiness:** New backends implement `VectorStore` only; declare `search_strategy=ann` when approximate. No HNSW/IVF in tree.
+- **Embedding versioning:** Stored on each `Memory` and index metadata; filter by version during mixed rollouts; no re-embed worker yet.
+- **Stale memories:** `MemoryManager.supersede()` + `superseded_by_memory_id`; excluded from default retrieval.
 
 See [docs/concepts/vector-memory.md](docs/concepts/vector-memory.md).
 
@@ -53,6 +57,8 @@ See [docs/concepts/vector-memory.md](docs/concepts/vector-memory.md).
 - `src/Memory/memory_store.py`
 - `src/Memory/memory_retriever.py`
 - `src/Memory/memory_manager.py`
+- `src/Memory/retrieval.py`
+- `tests/benchmarks/test_bruteforce_vector_bench.py` (optional, `AGENTX_RUN_BENCH=1`)
 - `docs/concepts/vector-memory.md`
 - `tests/test_vector_memory.py`
 - `tests/test_orchestrator_memory.py`
@@ -95,21 +101,26 @@ MemoryManager
 
 Run: `pytest` from repo root (requires `pip install -r requirements.txt`).
 
-**Last run:** 10 passed (vector memory + orchestrator memory integration).
+**Last run:** 17 passed, 1 skipped (optional benchmark).
 
 ## Known limitations
 
 - WIP codebase: several node/history types still inconsistent (executor/reflector paths not fully green in integration tests beyond memory).
-- No persistent memory backend.
+- No persistent memory backend; brute-force in-memory index only.
+- No ANN library or vector DB integrated.
 - Hash embeddings are for development only.
+- No embedding migration/re-embedding pipeline.
 - No automatic memory write at end of execution.
+- No advanced ranking beyond vector similarity score.
 
 ## Next planned component
 
-1. **Persistence** — file or DB-backed `MemoryStore` + pluggable `VectorStore` (e.g. pgvector).  
-2. **Production EmbeddingProvider** — env-configured API adapter.  
-3. **Remember hook** — optional post-run `remember()` from approved reflections (without merging History into Memory).
+1. **Durable VectorStore** — pgvector/Qdrant implementing `VectorStore` + optional ANN `search_strategy`.  
+2. **Re-embedding job** — batch upgrade when `embedding_version` changes.  
+3. **Production EmbeddingProvider** — env-configured API adapter.  
+4. **Remember hook** — optional post-run `remember()` from approved reflections (without merging History into Memory).
 
 ## History log
 
 - **2026-09-25** — Module 2 vector memory foundation integrated; documentation and tests added.
+- **2026-10-08** — Vector memory v1.1: retrieval filters, embedding versioning, brute-force/ANN-ready `VectorStore`, supersede support.

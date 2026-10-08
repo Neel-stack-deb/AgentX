@@ -26,28 +26,62 @@ Think of each embedding as an arrow. Cosine similarity asks: “Are these arrows
 
 `VectorStore` only:
 
-- upsert `(memory_id → embedding)`
+- upsert `VectorIndexRecord` (embedding + denormalized `VectorIndexMetadata`)
 - delete by `memory_id`
-- `similarity_search(query_embedding, top_k)`
+- `similarity_search(query_embedding, top_k, filters?)`
 
-It does **not** know about goals, plans, nodes, or prompts. Swap `InMemoryVectorStore` for pgvector/Qdrant/Chroma by implementing the same interface.
+It exposes `search_strategy` (`brute_force` vs `ann`) so operators know what they are running. AgentX code never branches on that flag.
+
+It does **not** know about goals, plans, nodes, or prompts. Swap `BruteForceVectorStore` / `InMemoryVectorStore` for pgvector, Qdrant, Chroma, or an ANN library by implementing the same interface.
+
+### Why VectorStore is an abstraction
+
+Production teams change storage often (managed DB, self-hosted ANN, multi-tenant indexes). If retrieval logic leaked into `MemoryManager` or the Orchestrator, every migration would touch execution flow. The interface keeps **similarity search + optional metadata filters** behind one seam.
 
 ## 7. EmbeddingProvider responsibility
 
-`EmbeddingProvider` only embeds text (single or batch). It does **not** persist memories or call the LLM. Production: implement a thin adapter around OpenAI, Cohere, local sentence-transformers, etc.
+`EmbeddingProvider` embeds text (single or batch) and exposes:
 
-**Development default:** `HashEmbeddingProvider` — deterministic token hashing, no API keys, good enough for tests and local wiring.
+- `model_name` — logical embedding model id  
+- `model_version` — version string for migration  
+- `dimensions` — vector width  
+
+It does **not** persist memories or call the LLM. Production: implement a thin adapter around OpenAI, Cohere, local sentence-transformers, etc.
+
+**Development default:** `HashEmbeddingProvider` (`hash-bow`, version `1`) — deterministic token hashing, no API keys.
+
+### Embedding versioning and migration (future)
+
+```
+Embedding Model V1  →  vectors in index tagged embedding_version=V1
+        ↓
+Embedding Model V2  →  new writes use V2; old vectors are incompatible
+        ↓
+Re-embedding job   →  read Memory.content, re-embed with V2, upsert index
+```
+
+AgentX stores `embedding_model`, `embedding_version`, and `embedding_dimension` on each `Memory` and on `VectorIndexMetadata`. Retrieval can filter by model/version so mixed indexes are safe during rollout. A full migration pipeline is **not** implemented yet.
 
 ## 8. MemoryRetriever responsibility
+
+Retrieval contract (unchanged conceptually):
+
+```
+Query → EmbeddingProvider → VectorStore (candidates) → MemoryRetriever → ScoredMemory
+```
 
 `VectorMemoryRetriever`:
 
 1. embed query  
-2. ask `VectorStore` for top-K `(memory_id, score)`  
+2. pass optional `MemoryRetrievalFilter` to `VectorStore`  
 3. hydrate `Memory` from `MemoryStore`  
-4. drop non-`ACTIVE` records  
+4. enforce `ACTIVE` status and superseded exclusion  
 
-Ranking is pure vector score today (no reranker).
+**Vector similarity is candidate generation, not final relevance.** No reranker or cross-encoder in this module.
+
+### Metadata filtering
+
+`MemoryRetrievalFilter` supports optional `memory_type`, `status`, `project_id`, `scope`, `embedding_model`, `embedding_version`, and `exclude_superseded`. Filters are applied inside `VectorStore` against `VectorIndexMetadata` (reducing search space before scoring in brute-force mode). The Orchestrator does not construct filters; callers of `MemoryManager.retrieve(..., filters=...)` do.
 
 ## 9. MemoryManager responsibility
 
@@ -55,8 +89,9 @@ Ranking is pure vector score today (no reranker).
 
 | Method | Behavior |
 |--------|----------|
-| `remember(content, …)` | Create `Memory`, embed, persist record + vector |
-| `retrieve(query, top_k)` | Return `Memory` list (scores via `retrieve_scored`) |
+| `remember(content, …)` | Create `Memory`, embed, persist record + vector index metadata |
+| `retrieve(query, top_k, filters?)` | Return `Memory` list (scores via `retrieve_scored`) |
+| `supersede(old_id, new_id)` | Mark stale memory; excluded from default retrieval |
 | `update` / `touch_content` | Update record and re-embed |
 | `delete` | Soft-delete in store + remove from vector index |
 
@@ -109,42 +144,96 @@ Memory → ExecutionContext.retrieved_memories → PromptBuilder → LLM
 - `created_at` / `updated_at` — UTC timestamps  
 - `source` — optional provenance (e.g. execution id)  
 - `importance` — optional 0..1 (reserved for future ranking)  
-- `status` — `active` \| `archived` \| `deleted` (delete is soft in `MemoryStore`)
+- `status` — `active` \| `archived` \| `deleted` (delete is soft in `MemoryStore`)  
+- `project_id` / `scope` — optional partition for filters  
+- `embedding_model` / `embedding_version` / `embedding_dimension` — index compatibility  
+- `superseded_by_memory_id` — stale lineage; default retrieval skips these  
 
 `ScoredMemory` pairs `Memory` with retrieval score.
 
-## 15. Current implementation
+### Stale memory (current vs future)
+
+- **Today:** `MemoryManager.supersede()` sets `superseded_by_memory_id` and refreshes the vector index metadata. Retriever excludes superseded rows when `exclude_superseded=True`.  
+- **Future:** TTL policies, automatic archival, compression, and conflict resolution stay in `MemoryManager` / `MemoryStore` — not in `History` or nodes.
+
+---
+
+## 15. Search algorithms — concepts
+
+### Brute-force search (current default)
+
+`BruteForceVectorStore` compares the query vector to **every** indexed vector (after metadata filter). Cost is approximately **O(N × D)** for N vectors and dimension D. Correct for exact cosine ranking over the filtered set; fine for dev and small corpora.
+
+### Approximate Nearest Neighbor (ANN) — future production
+
+At large N, full scan is too slow. ANN indexes (e.g. **HNSW**, **IVF**) trade **recall** for **latency**: they may miss the true nearest neighbors but return good candidates fast. AgentX does **not** ship HNSW or IVF today; a production `VectorStore` with `search_strategy=ann` would hide that choice.
+
+| Approach | Idea | AgentX today |
+|----------|------|----------------|
+| Brute force | Scan all vectors | **Yes** (`BruteForceVectorStore`) |
+| HNSW | Graph-based greedy search on a small-world graph | No — implement behind `VectorStore` |
+| IVF | Cluster centroids, search top clusters only | No — implement behind `VectorStore` |
+
+**Where ANN belongs:** only inside a `VectorStore` implementation. `MemoryRetriever` and `MemoryManager` stay identical.
+
+### Recall vs latency
+
+Stricter ANN parameters → faster queries, lower recall. Tuning is an ops concern for the chosen backend, not the Orchestrator.
+
+---
+
+## 16. CURRENT IMPLEMENTATION
 
 ```
 src/Memory/
-  embedding_provider.py   # EmbeddingProvider + HashEmbeddingProvider
+  embedding_provider.py   # EmbeddingProvider + HashEmbeddingProvider (model_name/version)
+  retrieval.py            # MemoryRetrievalFilter, VectorIndexRecord, metadata helpers
   vector_math.py          # cosine_similarity
-  vector_store.py         # VectorStore + InMemoryVectorStore
-  memory_store.py         # MemoryStore + InMemoryMemoryStore
+  vector_store.py         # VectorStore, BruteForceVectorStore, InMemoryVectorStore
+  memory_store.py         # MemoryStore + InMemoryMemoryStore (in-process records)
   memory_retriever.py     # VectorMemoryRetriever
   memory_manager.py       # MemoryManager
 src/Types/Memory.py       # domain models
 ```
 
-## 16. Current limitations
+- **Persistence:** `InMemoryMemoryStore` holds `Memory` records; `BruteForceVectorStore` holds vectors + index metadata. Nothing is durable across process restarts.  
+- **Vector search:** brute-force cosine over in-memory records with optional metadata pre-filter.  
+- **ANN:** not implemented; `VectorSearchStrategy.ANN` reserved for future backends.
+
+Optional benchmark (not CI): `tests/benchmarks/test_bruteforce_vector_bench.py` with `AGENTX_RUN_BENCH=1`.
+
+## 17. FUTURE PRODUCTION DESIGN
+
+1. Durable `MemoryStore` (SQL/document).  
+2. `VectorStore` backed by pgvector / Qdrant / etc., or ANN library isolated behind `VectorStore`.  
+3. Re-embedding worker when `embedding_version` changes.  
+4. Optional reranker **after** vector candidates (not part of vector memory v1).  
+5. Orchestrator and nodes unchanged.
+
+## 18. Current limitations
 
 - In-memory only; no persistence across process restarts  
 - Hash embeddings are not semantically strong  
+- Brute-force search only (no HNSW/IVF in repo)  
 - No hybrid / graph memory, no reranking, no automatic “remember after run” hook  
 - Planner prompt only (executor/reflector templates unchanged)  
-- No memory-type or metadata filters on retrieve  
+- No full embedding migration pipeline  
 
-## 17. Replacing the vector backend
+## 19. Replacing the vector backend
 
-1. Implement `VectorStore` against your database (store `memory_id`, float array, optional index).  
-2. Optionally implement `MemoryStore` for durable metadata.  
-3. Inject both into `MemoryManager`.  
-4. **Orchestrator and ExecutionContextManager stay unchanged.**
+1. Implement `VectorStore` (upsert `VectorIndexRecord`, filtered `similarity_search`).  
+2. Set `search_strategy` to `ann` when using an approximate index.  
+3. Optionally implement durable `MemoryStore`.  
+4. Inject both into `MemoryManager`.  
+5. **Orchestrator and ExecutionContextManager stay unchanged.**
 
-## 18. Architectural decisions
+## 20. Architectural decisions
 
 - **MemoryManager optional on Orchestrator** — avoids breaking callers without memory.  
 - **Split MemoryStore vs VectorStore** — metadata CRUD vs similarity index (matches how production DBs are often split).  
 - **Context evolution via ContextManager** — retrieved memories follow ADR-001/005, same as node results.  
 - **HashEmbeddingProvider for dev** — keeps CI/local free of secrets while preserving swap-friendly `EmbeddingProvider`.  
-- **Soft delete** — preserves audit-friendly metadata while excluding deleted rows from retrieval.
+- **Soft delete** — preserves audit-friendly metadata while excluding deleted rows from retrieval.  
+- **Denormalized `VectorIndexMetadata`** — enables filter-before-score without joining stores on every brute-force scan.  
+- **Embedding tags on Memory** — enables safe mixed-version indexes during model upgrades.  
+- **Supersede on MemoryManager** — stale handling stays out of nodes and History.

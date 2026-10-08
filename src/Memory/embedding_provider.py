@@ -9,6 +9,18 @@ class EmbeddingProvider(ABC):
 
     @property
     @abstractmethod
+    def model_name(self) -> str:
+        """Logical model id (e.g. text-embedding-3-small, hash-bow)."""
+        pass
+
+    @property
+    @abstractmethod
+    def model_version(self) -> str:
+        """Provider-specific version string for migration and index compatibility."""
+        pass
+
+    @property
+    @abstractmethod
     def dimensions(self) -> int:
         pass
 
@@ -29,10 +41,23 @@ class HashEmbeddingProvider(EmbeddingProvider):
     Replace with an HTTP/API-backed provider in production without changing MemoryManager.
     """
 
-    def __init__(self, dimensions: int = 64) -> None:
+    def __init__(
+        self,
+        dimensions: int = 64,
+        model_version: str = "1",
+    ) -> None:
         if dimensions < 8:
             raise ValueError("dimensions must be at least 8")
         self._dimensions = dimensions
+        self._model_version = model_version
+
+    @property
+    def model_name(self) -> str:
+        return "hash-bow"
+
+    @property
+    def model_version(self) -> str:
+        return self._model_version
 
     @property
     def dimensions(self) -> int:
