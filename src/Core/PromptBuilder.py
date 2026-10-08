@@ -20,15 +20,26 @@ class PromptBuilder(BasePromptBuilder):
         raise ValueError(f"Unknown template: {template}")
 
     def _build_planner_prompt(self, context: ExecutionContext) -> str:
+        memory_section = self._format_retrieved_memories(context)
 
         return f"""
 You are an expert planner.
 
 Goal:
 {context.goal.description}
-
+{memory_section}
 Generate a step-by-step plan.
 """
+
+    def _format_retrieved_memories(self, context: ExecutionContext) -> str:
+        if not context.retrieved_memories:
+            return ""
+
+        lines = ["", "Relevant memories:"]
+        for memory in context.retrieved_memories:
+            lines.append(f"- ({memory.memory_type.value}) {memory.content}")
+        lines.append("")
+        return "\n".join(lines)
 
     def _build_executor_prompt(self, context: ExecutionContext) -> str:
 
