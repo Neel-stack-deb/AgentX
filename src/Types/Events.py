@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 
 class Event(BaseModel):
     execution_id: str
-    timestamp: datetime | Field(default_factory=datetime.now)
+    timestamp: datetime.datetime = Field(default_factory=datetime.datetime.utcnow)
 
 
 class GoalReceived(Event):

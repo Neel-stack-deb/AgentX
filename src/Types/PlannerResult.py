@@ -1,4 +1,6 @@
-from Types import HistoryRecord, NodeResult, Plan
+from Types.HistoryRecord import HistoryRecord
+from Types.NodeResult import NodeResult
+from Types.Plan import Plan
 from Types.Artifact import PlanArtifact
 from Types.Events import PlanCreated
 from uuid import uuid4

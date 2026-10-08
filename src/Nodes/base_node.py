@@ -1,8 +1,9 @@
 from abc import ABC, abstractmethod
 
-from Core import ExecutionContext, BasePromptBuilder
-from Types import NodeResult
-from llm import BaseLLMClient
+from Core.BasePromptBuilder import BasePromptBuilder
+from Core.ExecutionContext import ExecutionContext
+from Types.NodeResult import NodeResult
+from llm.BaseLLMClient import BaseLLMClient
 
 
 class BaseNode(ABC):

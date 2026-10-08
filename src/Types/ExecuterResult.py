@@ -1,4 +1,5 @@
-from Types import ExecutionResponse, NodeResult
+from Types.ExecutionResponse import ExecutionResponse
+from Types.NodeResult import NodeResult
 from Types.Plan import PlanStep
 from Types.Artifact import ExecutionArtifact
 from Types.Events import TaskCompleted
@@ -19,7 +20,7 @@ class ExecutorResult(NodeResult):
             artifact_id=str(uuid4()),
             execution_id=execution_id,
             step_id=self.step.step_id,
-            response=self.response,
+            response=self.executionResponse,
             reflection=None,
         )
 
@@ -33,3 +34,6 @@ class ExecutorResult(NodeResult):
             event=event,
             artifact=artifact,
         )
+
+
+ExecuterResult = ExecutorResult

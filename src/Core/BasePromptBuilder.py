@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from ast import Pass
 
-from Core import ExecutionContext
+from Core.ExecutionContext import ExecutionContext
 from Types.Enums import PromptTemplate
 
 

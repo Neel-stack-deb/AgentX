@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-from Types import Artifact
+from Types.Artifact import Artifact
 from Types.Events import Event
 
 

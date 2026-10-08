@@ -1,6 +1,7 @@
-from Core import ExecutionContext
+from Core.ExecutionContext import ExecutionContext
 from Nodes.base_node import BaseNode
-from Types import Reflection, ReflectorResult
+from Types.Reflection import Reflection
+from Types.ReflectorResult import ReflectorResult
 from Types.Enums import PromptTemplate
 
 

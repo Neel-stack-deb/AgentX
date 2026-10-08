@@ -12,7 +12,7 @@ class Plan(BaseModel):
     steps: list[PlanStep]
 
     def next_pending_step(self) -> PlanStep | None:
-        for step in self.plan_steps:
+        for step in self.steps:
             if step.status == PlanStepStatus.PENDING:
                 return step
         return None
