@@ -1,22 +1,21 @@
 from pydantic import ValidationError
-from Core import ExecutionContext
-from Types import (
-    ExecuterResult,
-    Goal,
-    NodeResult,
-    Plan,
-    PlannerResult,
-    ReflectorResult,
-    Scratchpad,
-    TaskExecution,
-)
+from Core.ExecutionContext import ExecutionContext
+from Types.ExecuterResult import ExecuterResult
+from Types.Goal import Goal
+from Types.NodeResult import NodeResult
+from Types.Plan import Plan, PlanStep
+from Types.PlannerResult import PlannerResult
+from Types.ReflectorResult import ReflectorResult
+from Types.Scratchpad import Scratchpad
+from Types.TaskExecution import TaskExecution
 from Types.Enums import PlanStepStatus, ReflectionDecision
+from Types.Memory import Memory
 
 
 class ExecutionContextManager:
 
     def __init__(self) -> None:
-        self.handlers: {
+        self.handlers = {
             PlannerResult: self._apply_planner,
             ExecuterResult: self._apply_executer,
             ReflectorResult: self._apply_reflector,
@@ -35,6 +34,15 @@ class ExecutionContextManager:
             scratchpad=Scratchpad(),
         )
 
+    def with_retrieved_memories(
+        self,
+        context: ExecutionContext,
+        memories: list[Memory],
+    ) -> ExecutionContext:
+        return context.model_copy(
+            update={"retrieved_memories": list(memories)},
+        )
+
     def apply(self, context: ExecutionContext, result: NodeResult) -> ExecutionContext:
         """
         This function is responsible for creting new instances of the immutable Execution Context.
@@ -50,7 +58,7 @@ class ExecutionContextManager:
     ) -> ExecutionContext:
         try:
             return context.model_copy(
-                update={"plan": result.plan}, force_validation=True
+                update={"plan": result.plan},
             )
 
         except ValidationError as validationError:
@@ -68,7 +76,7 @@ class ExecutionContextManager:
         )
         try:
             return context.model_copy(
-                update={"current_task_execution": task_execution}, force_validation=True
+                update={"current_task_execution": task_execution},
             )
         except ValidationError as validationError:
             print(
@@ -99,7 +107,6 @@ class ExecutionContextManager:
                     "current_task_execution": updated_execution,
                     "plan": updated_plan,
                 },
-                force_validation=True,
             )
         except ValidationError as validationError:
             print(
@@ -107,7 +114,7 @@ class ExecutionContextManager:
             )
 
     def _update_plan(
-        self, plan: Plan, planStep: Plan.PlanStep, decision: ReflectionDecision
+        self, plan: Plan, planStep: PlanStep, decision: ReflectionDecision
     ) -> Plan:
         updated_steps = []
         for s in plan.steps:
