@@ -2,7 +2,7 @@
 
 ## Version
 
-**0.2.1-dev** — Module 2 vector memory foundation + production-readiness pass.
+**0.3.0-dev** — Module 2 vector memory + PostgreSQL/pgvector production layer.
 
 ## Module 1 — Core agent loop (existing)
 
@@ -32,7 +32,13 @@
 | MemoryRetriever | **Done (v1.1)** | `MemoryRetrievalFilter` on retrieve |
 | MemoryManager | **Done (v1.1)** | + `supersede`, filtered retrieve |
 | Retrieval contracts | **Done (v1.1)** | `Memory/retrieval.py` |
-| ANN (HNSW / IVF) | Not implemented | Future `VectorStore` backends only |
+| PostgreSQL MemoryStore | **Done (v0.3)** | `PostgresMemoryStore` + shared repository |
+| PgVectorStore | **Done (v0.3)** | SQL `<=>` similarity, SQL metadata filters |
+| ANN (HNSW) | **Done (v0.3)** | Migration `002_hnsw_index.sql`; `PGVECTOR_INDEX_MODE` |
+| ANN (IVF) | Not implemented | Future migration |
+| Connection pooling | **Done (v0.3)** | `psycopg_pool` via `create_pool()` |
+| Config factory | **Done (v0.3)** | `MEMORY_STORE` / `VECTOR_STORE` + `build_memory_manager()` |
+| Re-embedding | **Foundation (v0.3)** | `ReembeddingMigrator`, `scripts/reembed_memories.py` |
 | Orchestrator integration | **Done (v1)** | Optional retrieve before planning |
 | Knowledge graph memory | Not started | Out of scope for this milestone |
 | Hybrid memory | Not started | Out of scope |
@@ -101,7 +107,7 @@ MemoryManager
 
 Run: `pytest` from repo root (requires `pip install -r requirements.txt`).
 
-**Last run:** 17 passed, 1 skipped (optional benchmark).
+**Last run:** 23 passed, 5 skipped (integration + benchmarks opt-in).
 
 ## Known limitations
 
@@ -124,3 +130,4 @@ Run: `pytest` from repo root (requires `pip install -r requirements.txt`).
 
 - **2026-09-25** — Module 2 vector memory foundation integrated; documentation and tests added.
 - **2026-10-08** — Vector memory v1.1: retrieval filters, embedding versioning, brute-force/ANN-ready `VectorStore`, supersede support.
+- **2026-10-08** — v0.3: PostgreSQL + pgvector (`PostgresMemoryStore`, `PgVectorStore`), migrations, Docker Compose, transactional writes, re-embed foundation. See [docs/concepts/production-vector-memory.md](docs/concepts/production-vector-memory.md).

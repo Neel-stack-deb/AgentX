@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 
 from Memory.embedding_provider import EmbeddingProvider
+from Memory.embedding_validation import validate_provider_embedding
 from Memory.memory_retriever import MemoryRetriever, VectorMemoryRetriever
 from Memory.memory_store import InMemoryMemoryStore, MemoryStore
 from Memory.retrieval import MemoryRetrievalFilter, VectorIndexMetadata, VectorIndexRecord
@@ -53,6 +54,7 @@ class MemoryManager:
             embedding_dimension=self._embedding_provider.dimensions,
         )
         embedding = self._embedding_provider.embed(content)
+        validate_provider_embedding(self._embedding_provider, embedding)
         self._memory_store.save(memory)
         self._index_memory(memory, embedding)
         return memory
@@ -90,6 +92,7 @@ class MemoryManager:
         )
         updated = self._memory_store.update(memory)
         embedding = self._embedding_provider.embed(updated.content)
+        validate_provider_embedding(self._embedding_provider, embedding)
         self._index_memory(updated, embedding)
         return updated
 

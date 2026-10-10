@@ -202,7 +202,11 @@ src/Types/Memory.py       # domain models
 
 Optional benchmark (not CI): `tests/benchmarks/test_bruteforce_vector_bench.py` with `AGENTX_RUN_BENCH=1`.
 
-## 17. FUTURE PRODUCTION DESIGN
+## 17. Production PostgreSQL + pgvector
+
+Durable backends, migrations, Docker Compose, HNSW indexes, and transactional writes are documented in [production-vector-memory.md](production-vector-memory.md).
+
+## 18. FUTURE PRODUCTION DESIGN
 
 1. Durable `MemoryStore` (SQL/document).  
 2. `VectorStore` backed by pgvector / Qdrant / etc., or ANN library isolated behind `VectorStore`.  
@@ -210,7 +214,7 @@ Optional benchmark (not CI): `tests/benchmarks/test_bruteforce_vector_bench.py` 
 4. Optional reranker **after** vector candidates (not part of vector memory v1).  
 5. Orchestrator and nodes unchanged.
 
-## 18. Current limitations
+## 19. Current limitations
 
 - In-memory only; no persistence across process restarts  
 - Hash embeddings are not semantically strong  
@@ -219,7 +223,7 @@ Optional benchmark (not CI): `tests/benchmarks/test_bruteforce_vector_bench.py` 
 - Planner prompt only (executor/reflector templates unchanged)  
 - No full embedding migration pipeline  
 
-## 19. Replacing the vector backend
+## 20. Replacing the vector backend
 
 1. Implement `VectorStore` (upsert `VectorIndexRecord`, filtered `similarity_search`).  
 2. Set `search_strategy` to `ann` when using an approximate index.  
@@ -227,7 +231,7 @@ Optional benchmark (not CI): `tests/benchmarks/test_bruteforce_vector_bench.py` 
 4. Inject both into `MemoryManager`.  
 5. **Orchestrator and ExecutionContextManager stay unchanged.**
 
-## 20. Architectural decisions
+## 21. Architectural decisions
 
 - **MemoryManager optional on Orchestrator** — avoids breaking callers without memory.  
 - **Split MemoryStore vs VectorStore** — metadata CRUD vs similarity index (matches how production DBs are often split).  

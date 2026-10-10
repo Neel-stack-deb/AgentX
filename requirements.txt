@@ -1,5 +1,7 @@
 pytest==8.4.2
 pytest-asyncio==1.2.0
+psycopg[binary,pool]==3.2.9
+pgvector==0.4.1
 annotated-types==0.7.0
 markdown-it-py==4.2.0
 mdurl==0.1.2

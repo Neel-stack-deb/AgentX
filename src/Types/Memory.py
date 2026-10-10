@@ -31,6 +31,7 @@ class Memory(BaseModel):
     - embedding_model / embedding_version / embedding_dimension: which index produced the vector
     - project_id / scope: optional tenancy or partition for retrieval filters
     - superseded_by_memory_id: when set, memory is stale; excluded from default retrieval
+    - valid_from / valid_until: optional temporal validity window (not enforced in v1 retrieval)
     """
 
     memory_id: str = Field(default_factory=lambda: str(uuid4()))
@@ -47,6 +48,8 @@ class Memory(BaseModel):
     embedding_version: str | None = None
     embedding_dimension: int | None = None
     superseded_by_memory_id: str | None = None
+    valid_from: datetime | None = None
+    valid_until: datetime | None = None
 
 
 class ScoredMemory(BaseModel):
