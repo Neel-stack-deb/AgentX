@@ -41,6 +41,12 @@ class Memory(BaseModel):
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     source: str | None = None
     importance: float | None = Field(default=None, ge=0.0, le=1.0)
+    confidence: float | None = Field(
+        default=None,
+        ge=0.0,
+        le=1.0,
+        description="Trust in memory accuracy; lower values down-rank in hybrid scoring.",
+    )
     status: MemoryStatus = MemoryStatus.ACTIVE
     project_id: str | None = None
     scope: str | None = None
@@ -52,6 +58,19 @@ class Memory(BaseModel):
     valid_until: datetime | None = None
 
 
+class RankingBreakdown(BaseModel):
+    """Per-signal contributions after normalization (all in [0, 1] unless noted)."""
+
+    similarity: float
+    recency: float
+    importance: float
+    confidence: float
+    lexical_overlap: float
+    composite: float
+
+
 class ScoredMemory(BaseModel):
     memory: Memory
     score: float
+    similarity_score: float | None = None
+    ranking_breakdown: RankingBreakdown | None = None
