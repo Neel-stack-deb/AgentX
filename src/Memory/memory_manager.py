@@ -3,6 +3,8 @@ from datetime import datetime, timezone
 from Memory.embedding_provider import EmbeddingProvider
 from Memory.embedding_validation import validate_provider_embedding
 from Memory.memory_retriever import MemoryRetriever, VectorMemoryRetriever
+from Memory.ranking import RankingConfig
+from Memory.retrieval_outcome import RetrievalOutcome
 from Memory.memory_store import InMemoryMemoryStore, MemoryStore
 from Memory.retrieval import MemoryRetrievalFilter, VectorIndexMetadata, VectorIndexRecord
 from Memory.vector_store import InMemoryVectorStore, VectorStore
@@ -21,14 +23,17 @@ class MemoryManager:
         memory_store: MemoryStore | None = None,
         vector_store: VectorStore | None = None,
         retriever: MemoryRetriever | None = None,
+        ranking_config: RankingConfig | None = None,
     ) -> None:
         self._embedding_provider = embedding_provider
         self._memory_store = memory_store or InMemoryMemoryStore()
         self._vector_store = vector_store or InMemoryVectorStore()
+        self._ranking_config = ranking_config or RankingConfig()
         self._retriever = retriever or VectorMemoryRetriever(
             embedding_provider=self._embedding_provider,
             vector_store=self._vector_store,
             memory_store=self._memory_store,
+            ranking_config=self._ranking_config,
         )
 
     def remember(
@@ -78,6 +83,30 @@ class MemoryManager:
     ) -> list[ScoredMemory]:
         return self._retriever.retrieve(
             query=query, top_k=top_k, filters=filters
+        )
+
+    def retrieve_with_diagnostics(
+        self,
+        query: str,
+        top_k: int = 5,
+        filters: MemoryRetrievalFilter | None = None,
+    ) -> RetrievalOutcome:
+        if hasattr(self._retriever, "retrieve_with_diagnostics"):
+            return self._retriever.retrieve_with_diagnostics(
+                query=query, top_k=top_k, filters=filters
+            )
+        memories = self.retrieve_scored(query=query, top_k=top_k, filters=filters)
+        from Memory.retrieval_outcome import RetrievalDiagnostics
+
+        return RetrievalOutcome(
+            memories=memories,
+            diagnostics=RetrievalDiagnostics(
+                ranking_strategy="passthrough",
+                candidate_pool_size=top_k,
+                candidate_count=len(memories),
+                eligible_count=len(memories),
+                result_count=len(memories),
+            ),
         )
 
     def update(self, memory: Memory) -> Memory:
