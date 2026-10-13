@@ -188,7 +188,8 @@ def test_vector_store_is_replaceable(embedding_provider: HashEmbeddingProvider):
     manager.remember("replaceable backend check")
     manager.retrieve("backend", top_k=3, filters=MemoryRetrievalFilter(scope="team-1"))
     assert len(store.search_calls) == 1
-    assert store.search_calls[0][0] == 3
+    # Candidate pool is larger than final top_k for ranking recall.
+    assert store.search_calls[0][0] >= 3
 
 
 def test_superseded_memory_excluded_by_default(memory_manager: MemoryManager):

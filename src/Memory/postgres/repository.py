@@ -330,10 +330,11 @@ class PostgresMemoryRepository:
             with conn.transaction():
                 with conn.cursor(row_factory=dict_row) as cur:
                     if self._settings.pgvector_index_mode == PgVectorIndexMode.HNSW:
-                        cur.execute(
-                            "SET LOCAL hnsw.ef_search = %s",
-                            (self._settings.hnsw_ef_search,),
-                        )
+                        # SET does not accept bind parameters in PostgreSQL.
+                        ef_search = int(self._settings.hnsw_ef_search)
+                        if ef_search < 1:
+                            raise ValueError("hnsw_ef_search must be >= 1")
+                        cur.execute(f"SET LOCAL hnsw.ef_search = {ef_search}")
                     if self._settings.pgvector_index_mode == PgVectorIndexMode.EXACT:
                         cur.execute("SET LOCAL enable_indexscan = off")
 

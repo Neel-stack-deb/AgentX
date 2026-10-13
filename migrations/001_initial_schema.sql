@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS agentx_memories (
     embedding_model TEXT,
     embedding_version TEXT,
     embedding_dimension INTEGER,
-    embedding vector
+    embedding vector({{EMBEDDING_DIMENSION}})
 );
 
 -- Primary key already indexes memory_id.

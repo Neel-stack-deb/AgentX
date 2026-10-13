@@ -1,5 +1,5 @@
 -- Optional ANN index (HNSW). Apply when PGVECTOR_INDEX_MODE=hnsw.
--- Uses cosine distance operator class; queries use <=> and convert distance to similarity.
+-- Requires migration 002 (fixed embedding dimensions).
 
 CREATE INDEX IF NOT EXISTS idx_agentx_memories_embedding_hnsw
     ON agentx_memories
