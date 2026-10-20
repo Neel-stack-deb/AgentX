@@ -141,7 +141,6 @@ class MemoryManager:
         if self._summary_store is None:
             raise RuntimeError("summary_store is not configured on MemoryManager")
         from Memory.hierarchical.hierarchical_retriever import HierarchicalMemoryRetriever
-        from Types.HierarchicalMemory import HierarchicalRetrievalResult
 
         return HierarchicalMemoryRetriever(
             summary_store=self._summary_store,
