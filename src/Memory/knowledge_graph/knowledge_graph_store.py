@@ -45,6 +45,17 @@ class KnowledgeGraphStore(ABC):
     ) -> list[GraphTraversalNode]:
         ...
 
+    @abstractmethod
+    def find_entity_ids_for_memory(self, memory_id: str) -> list[str]:
+        """Entity ids that reference the given memory in source_memory_ids."""
+        ...
+
+    @abstractmethod
+    def relationships_between(
+        self, entity_ids: set[str], *, relationship_type: str | None = None
+    ) -> list[GraphRelationship]:
+        ...
+
 
 class InMemoryKnowledgeGraphStore(KnowledgeGraphStore):
     """Adjacency-list graph held in process memory (educational default)."""
@@ -135,3 +146,25 @@ class InMemoryKnowledgeGraphStore(KnowledgeGraphStore):
                 queue.append((neighbor_id, next_depth))
 
         return result
+
+    def find_entity_ids_for_memory(self, memory_id: str) -> list[str]:
+        found: set[str] = set()
+        for entity in self._entities.values():
+            if memory_id in entity.source_memory_ids:
+                found.add(entity.entity_id)
+        for rel in self._relationships:
+            if memory_id in rel.source_memory_ids:
+                found.add(rel.source_entity_id)
+                found.add(rel.target_entity_id)
+        return sorted(found)
+
+    def relationships_between(
+        self, entity_ids: set[str], *, relationship_type: str | None = None
+    ) -> list[GraphRelationship]:
+        matched: list[GraphRelationship] = []
+        for rel in self._relationships:
+            if relationship_type is not None and rel.relationship_type != relationship_type:
+                continue
+            if rel.source_entity_id in entity_ids and rel.target_entity_id in entity_ids:
+                matched.append(rel)
+        return sorted(matched, key=lambda r: r.relationship_id)
