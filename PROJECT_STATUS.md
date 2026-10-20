@@ -64,7 +64,7 @@
 | `confidence` on `Memory` | Done (v0.4) | Unit | Optional 0..1 signal for ranking. |
 | Knowledge graph memory (`InMemoryKnowledgeGraphStore`) | Done (v0.5 milestone 1) | Unit | `src/Memory/knowledge_graph/`, `Types/KnowledgeGraph.py`; not wired to `MemoryManager` yet. |
 | Hybrid memory (`HybridMemoryRetriever`) | Done (v0.5 milestone 2) | Unit | Vector retriever + graph BFS; `Types/HybridMemory.py`. |
-| Hierarchical summaries | Not started | — | Milestone 3 |
+| Hierarchical summaries (`InMemoryHierarchicalSummaryStore`) | Done (v0.5 milestone 3) | Unit | Manual content; stale/regenerate in store; `HierarchicalMemoryRetriever`. |
 | BM25 / LLM rerank | Not started | — | Out of scope |
 
 ## Vector memory — current behavior
@@ -108,11 +108,11 @@ Command: `pytest` from repo root without `AGENTX_PG_INTEGRATION` / `AGENTX_RUN_B
 
 | Result | Count |
 |--------|------|
-| Passed | 45 |
+| Passed | 49 |
 | Skipped | 6 |
 | Failed | 0 |
 
-**Unit modules include:** `test_vector_memory.py`, `test_ranking.py`, `test_eligibility.py`, `test_orchestrator_memory.py`, `test_embedding_validation.py`, `test_pgvector_unit.py`, `test_knowledge_graph_memory.py`, `test_hybrid_memory.py`.
+**Unit modules include:** `test_vector_memory.py`, `test_ranking.py`, `test_eligibility.py`, `test_orchestrator_memory.py`, `test_embedding_validation.py`, `test_pgvector_unit.py`, `test_knowledge_graph_memory.py`, `test_hybrid_memory.py`, `test_hierarchical_memory.py`.
 
 **Skipped unless opt-in:**
 
@@ -128,6 +128,7 @@ Run integration: `$env:AGENTX_PG_INTEGRATION="1"; pytest tests/integration -q`
 
 - `src/Types/Memory.py`, `src/Types/KnowledgeGraph.py`, `src/Memory/*.py` (manager, stores, retrieval, ranking, eligibility, factory, …)
 - `src/Memory/knowledge_graph/` — entity/relationship graph store
+- `src/Memory/hybrid/`, `src/Memory/hierarchical/` — hybrid and summary layers
 
 **PostgreSQL / pgvector (v0.3):**
 
@@ -145,7 +146,7 @@ Run integration: `$env:AGENTX_PG_INTEGRATION="1"; pytest tests/integration -q`
 **Docs:**
 
 - `docs/concepts/vector-memory.md`, `docs/concepts/production-vector-memory.md`, `docs/concepts/memory-retrieval-ranking.md`
-- `docs/concepts/knowledge-graph-memory.md`, `docs/concepts/hybrid-memory.md`
+- `docs/concepts/knowledge-graph-memory.md`, `docs/concepts/hybrid-memory.md`, `docs/concepts/hierarchical-memory.md`
 
 ## Known limitations (accurate)
 
@@ -178,3 +179,4 @@ Run integration: `$env:AGENTX_PG_INTEGRATION="1"; pytest tests/integration -q`
 - **2026-10-10** — v0.4: weighted memory ranking, hard eligibility, `confidence` field, retrieval diagnostics; docs `memory-retrieval-ranking.md`.
 - **2026-10-20** — v0.5 milestone 1: in-memory knowledge graph (`KnowledgeGraphStore`, BFS traversal, cycle-safe); `docs/concepts/knowledge-graph-memory.md`.
 - **2026-10-20** — v0.5 milestone 2: `HybridMemoryRetriever` (vector + graph, deduped ids); `docs/concepts/hybrid-memory.md`.
+- **2026-10-20** — v0.5 milestone 3: hierarchical summaries, staleness/regenerate in store; `docs/concepts/hierarchical-memory.md`.
