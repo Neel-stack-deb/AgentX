@@ -83,4 +83,6 @@ pytest tests/test_hierarchical_memory.py -q
 - When `MemoryManager` is constructed with `summary_store`, `update` / `touch_content` mark dependent summaries stale; use `invalidate_dependent_summaries` for explicit invalidation.
 - No background regeneration jobs.
 
-Future: hook summary invalidation into `MemoryManager.update`, optional summary generation, orchestrator context injection for overview intents.
+Use `MemoryManager(summary_store=...)` with `retrieve_hierarchical()`; vector orchestrator hook unchanged.
+
+Future: factory wiring in `build_memory_manager()`, optional orchestrator intent routing, automatic summary generation.

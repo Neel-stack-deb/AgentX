@@ -4,7 +4,7 @@
 
 ## Version
 
-**0.4.0-dev** — Module 2: vector memory + pgvector backend + retrieval/ranking layer (v0.4).
+**0.5.0-dev** — Module 2 extensions: knowledge graph, hybrid retrieval, hierarchical summaries (v0.5).
 
 ## Verification legend
 
@@ -57,12 +57,13 @@
 | IVF / external ANN libs | Not implemented | — | |
 | `ReembeddingMigrator` + CLI | Partial (v0.3) | Not tested | `reembedding.py`, `scripts/reembed_memories.py`; no pytest coverage. |
 | Observability (retrieval logs) | Partial (v0.3) | Manual | `observability.py`; used by `PgVectorStore`. |
-| Orchestrator + memory | Done (v1) | Unit | Optional `MemoryManager`; still in-memory unless caller wires postgres factory. |
+| Orchestrator + memory | Done (v1) | Unit | Optional `MemoryManager.retrieve` only; hybrid/hierarchical via explicit `MemoryManager` APIs. |
+| `MemoryManager` expanded retrieval | Done (v0.5 milestone 5) | Unit | `retrieve_hybrid`, `retrieve_hierarchical`; optional `knowledge_graph` / `summary_store`. |
 | Memory eligibility (hard filters) | Done (v0.4) | Unit | `eligibility.py`; validity window on hydrated records. |
 | Memory ranking (`weighted_v1`) | Done (v0.4) | Unit | `ranking.py`, `WeightedMemoryRanker`; not LLM reranking. |
 | Retrieval diagnostics | Done (v0.4) | Unit | `retrieve_with_diagnostics()` / `RetrievalOutcome`. |
 | `confidence` on `Memory` | Done (v0.4) | Unit | Optional 0..1 signal for ranking. |
-| Knowledge graph memory (`InMemoryKnowledgeGraphStore`) | Done (v0.5 milestone 1) | Unit | `src/Memory/knowledge_graph/`, `Types/KnowledgeGraph.py`; not wired to `MemoryManager` yet. |
+| Knowledge graph memory (`InMemoryKnowledgeGraphStore`) | Done (v0.5 milestone 1) | Unit | `src/Memory/knowledge_graph/`, `Types/KnowledgeGraph.py`. |
 | Hybrid memory (`HybridMemoryRetriever`) | Done (v0.5 milestone 2) | Unit | Vector retriever + graph BFS; `Types/HybridMemory.py`. |
 | Hierarchical summaries (`InMemoryHierarchicalSummaryStore`) | Done (v0.5 milestone 3) | Unit | Manual content; stale/regenerate in store; `HierarchicalMemoryRetriever`. |
 | Summary provenance / staleness on `MemoryManager` | Done (v0.5 milestone 4) | Unit | Optional `summary_store`; auto-stale on update; `invalidate_dependent_summaries`, `regenerate_summary`. |
@@ -93,7 +94,9 @@ Orchestrator (injects MemoryManager; does not select backend)
   │     ├─ MemoryStore     → InMemoryMemoryStore | PostgresMemoryStore
   │     ├─ VectorStore     → BruteForceVectorStore | PgVectorStore
   │     ├─ EmbeddingProvider (HashEmbeddingProvider today)
-  │     └─ MemoryRetriever → eligibility → MemoryRanker
+  │     ├─ MemoryRetriever → eligibility → MemoryRanker
+  │     ├─ KnowledgeGraphStore (optional) → HybridMemoryRetriever via retrieve_hybrid()
+  │     └─ HierarchicalSummaryStore (optional) → retrieve_hierarchical() + staleness on update
   ├─ NodeRunner → Nodes
   ├─ ExecutionContextManager
   └─ History (append-only; separate from Memory)
@@ -109,11 +112,11 @@ Command: `pytest` from repo root without `AGENTX_PG_INTEGRATION` / `AGENTX_RUN_B
 
 | Result | Count |
 |--------|------|
-| Passed | 52 |
+| Passed | 56 |
 | Skipped | 6 |
 | Failed | 0 |
 
-**Unit modules include:** `test_vector_memory.py`, `test_ranking.py`, `test_eligibility.py`, `test_orchestrator_memory.py`, `test_embedding_validation.py`, `test_pgvector_unit.py`, `test_knowledge_graph_memory.py`, `test_hybrid_memory.py`, `test_hierarchical_memory.py`.
+**Unit modules include:** `test_vector_memory.py`, `test_ranking.py`, `test_eligibility.py`, `test_orchestrator_memory.py`, `test_embedding_validation.py`, `test_pgvector_unit.py`, `test_knowledge_graph_memory.py`, `test_hybrid_memory.py`, `test_hierarchical_memory.py`, `test_memory_provenance.py`, `test_memory_manager_integration.py`.
 
 **Skipped unless opt-in:**
 
@@ -159,6 +162,8 @@ Run integration: `$env:AGENTX_PG_INTEGRATION="1"; pytest tests/integration -q`
 - **Sync** memory I/O while Orchestrator/nodes are **async**.
 - Hash embeddings only; no production embedding API.
 - **Validity filters** not pushed into pgvector SQL (post-hydration only).
+- Graph and hierarchical stores are **in-memory**; not persisted in Postgres migrations.
+- `build_memory_manager()` does not yet auto-wire graph/summary stores (construct `MemoryManager` manually for expanded retrieval).
 - No LLM reranking, BM25, post-run remember, compression, Pinecone, or distributed memory service.
 - Module 1 executor/reflector/history inconsistencies remain outside memory unit tests.
 
@@ -182,3 +187,4 @@ Run integration: `$env:AGENTX_PG_INTEGRATION="1"; pytest tests/integration -q`
 - **2026-10-20** — v0.5 milestone 2: `HybridMemoryRetriever` (vector + graph, deduped ids); `docs/concepts/hybrid-memory.md`.
 - **2026-10-20** — v0.5 milestone 3: hierarchical summaries, staleness/regenerate in store; `docs/concepts/hierarchical-memory.md`.
 - **2026-10-20** — v0.5 milestone 4: `MemoryManager` summary staleness + regenerate; transactional postgres update hook.
+- **2026-10-20** — v0.5 milestone 5: `retrieve_hybrid` / `retrieve_hierarchical` on `MemoryManager`; orchestrator unchanged (vector path only).

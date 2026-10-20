@@ -72,7 +72,7 @@ pytest tests/test_hybrid_memory.py -q
 
 - Seeds only from explicit `source_memory_ids` (no NER).
 - Graph expansion is outgoing BFS only (same as graph store default).
-- Not yet called from `Orchestrator` (integration milestone).
+- Call via `MemoryManager.retrieve_hybrid()` when `knowledge_graph` is configured; not auto-injected by `Orchestrator`.
 - Does not rank graph entities by relevance beyond vector-selected seeds.
 
 Future: optional `memory_id → entity_id` registry, incoming-edge traversal, prompt-sized summarization of `HybridMemoryResult`.

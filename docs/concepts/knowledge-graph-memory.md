@@ -80,5 +80,5 @@ Full suite: `pytest` (existing vector/orchestrator tests should still pass).
 
 - No persistence across process restarts.
 - Neighbor lookup scans all relationships (fine for POC scale).
-- Not wired into `Orchestrator` or `MemoryManager` yet (integration milestone).
+- Optional on `MemoryManager(knowledge_graph=...)`; use `retrieve_hybrid()` (Orchestrator still uses vector `retrieve()` only).
 - Possible future work: SQL tables for entities/edges, bidirectional traversal helpers, sync from `Memory.metadata` when a standard schema exists.

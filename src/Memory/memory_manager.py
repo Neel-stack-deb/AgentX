@@ -13,7 +13,14 @@ from Types.Memory import Memory, MemoryStatus, MemoryType, ScoredMemory
 
 if TYPE_CHECKING:
     from Memory.hierarchical.summary_store import HierarchicalSummaryStore
-    from Types.HierarchicalMemory import MemorySummary
+    from Memory.knowledge_graph.knowledge_graph_store import KnowledgeGraphStore
+    from Types.HierarchicalMemory import (
+        HierarchicalRetrievalIntent,
+        HierarchicalRetrievalResult,
+        MemorySummary,
+        SummaryScopeType,
+    )
+    from Types.HybridMemory import HybridMemoryResult
 
 
 class MemoryManager:
@@ -30,11 +37,13 @@ class MemoryManager:
         retriever: MemoryRetriever | None = None,
         ranking_config: RankingConfig | None = None,
         summary_store: "HierarchicalSummaryStore | None" = None,
+        knowledge_graph: "KnowledgeGraphStore | None" = None,
     ) -> None:
         self._embedding_provider = embedding_provider
         self._memory_store = memory_store or InMemoryMemoryStore()
         self._vector_store = vector_store or InMemoryVectorStore()
         self._summary_store = summary_store
+        self._knowledge_graph = knowledge_graph
         self._ranking_config = ranking_config or RankingConfig()
         self._retriever = retriever or VectorMemoryRetriever(
             embedding_provider=self._embedding_provider,
@@ -90,6 +99,58 @@ class MemoryManager:
     ) -> list[ScoredMemory]:
         return self._retriever.retrieve(
             query=query, top_k=top_k, filters=filters
+        )
+
+    def retrieve_hybrid(
+        self,
+        query: str,
+        *,
+        top_k: int = 5,
+        filters: MemoryRetrievalFilter | None = None,
+        graph_max_depth: int = 2,
+        relationship_type: str | None = None,
+    ) -> "HybridMemoryResult":
+        """
+        Bounded hybrid retrieval (vector memories + graph context).
+
+        Does not mutate execution context; callers inject into prompts if needed.
+        """
+        if self._knowledge_graph is None:
+            raise RuntimeError("knowledge_graph is not configured on MemoryManager")
+        from Memory.hybrid.hybrid_memory import HybridMemoryRetriever
+
+        return HybridMemoryRetriever(
+            memory_retriever=self._retriever,
+            knowledge_graph=self._knowledge_graph,
+        ).retrieve(
+            query,
+            top_k=top_k,
+            filters=filters,
+            graph_max_depth=graph_max_depth,
+            relationship_type=relationship_type,
+        )
+
+    def retrieve_hierarchical(
+        self,
+        intent: "HierarchicalRetrievalIntent",
+        *,
+        scope_type: "SummaryScopeType",
+        scope_id: str,
+        topic_scope_id: str | None = None,
+    ) -> "HierarchicalRetrievalResult":
+        if self._summary_store is None:
+            raise RuntimeError("summary_store is not configured on MemoryManager")
+        from Memory.hierarchical.hierarchical_retriever import HierarchicalMemoryRetriever
+        from Types.HierarchicalMemory import HierarchicalRetrievalResult
+
+        return HierarchicalMemoryRetriever(
+            summary_store=self._summary_store,
+            memory_store=self._memory_store,
+        ).retrieve(
+            intent,
+            scope_type=scope_type,
+            scope_id=scope_id,
+            topic_scope_id=topic_scope_id,
         )
 
     def retrieve_with_diagnostics(
