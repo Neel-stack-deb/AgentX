@@ -62,7 +62,10 @@
 | Memory ranking (`weighted_v1`) | Done (v0.4) | Unit | `ranking.py`, `WeightedMemoryRanker`; not LLM reranking. |
 | Retrieval diagnostics | Done (v0.4) | Unit | `retrieve_with_diagnostics()` / `RetrievalOutcome`. |
 | `confidence` on `Memory` | Done (v0.4) | Unit | Optional 0..1 signal for ranking. |
-| Knowledge graph / BM25 / LLM rerank | Not started | — | Out of scope |
+| Knowledge graph memory (`InMemoryKnowledgeGraphStore`) | Done (v0.5 milestone 1) | Unit | `src/Memory/knowledge_graph/`, `Types/KnowledgeGraph.py`; not wired to `MemoryManager` yet. |
+| Hybrid memory (vector + graph) | Not started | — | Milestone 2 |
+| Hierarchical summaries | Not started | — | Milestone 3 |
+| BM25 / LLM rerank | Not started | — | Out of scope |
 
 ## Vector memory — current behavior
 
@@ -101,15 +104,15 @@ Postgres path (shared):
 
 ## Tests (last run)
 
-Command: `pytest` from repo root without `AGENTX_PG_INTEGRATION` / `AGENTX_RUN_BENCH` (2026-10-10).
+Command: `pytest` from repo root without `AGENTX_PG_INTEGRATION` / `AGENTX_RUN_BENCH` (2026-10-20).
 
 | Result | Count |
 |--------|------|
-| Passed | 35 |
+| Passed | 42 |
 | Skipped | 6 |
 | Failed | 0 |
 
-**Unit modules include:** `test_vector_memory.py`, `test_ranking.py`, `test_eligibility.py`, `test_orchestrator_memory.py`, `test_embedding_validation.py`, `test_pgvector_unit.py`.
+**Unit modules include:** `test_vector_memory.py`, `test_ranking.py`, `test_eligibility.py`, `test_orchestrator_memory.py`, `test_embedding_validation.py`, `test_pgvector_unit.py`, `test_knowledge_graph_memory.py`.
 
 **Skipped unless opt-in:**
 
@@ -123,7 +126,8 @@ Run integration: `$env:AGENTX_PG_INTEGRATION="1"; pytest tests/integration -q`
 
 **In-memory / shared:**
 
-- `src/Types/Memory.py`, `src/Memory/*.py` (manager, stores, retrieval, ranking, eligibility, factory, …)
+- `src/Types/Memory.py`, `src/Types/KnowledgeGraph.py`, `src/Memory/*.py` (manager, stores, retrieval, ranking, eligibility, factory, …)
+- `src/Memory/knowledge_graph/` — entity/relationship graph store
 
 **PostgreSQL / pgvector (v0.3):**
 
@@ -141,6 +145,7 @@ Run integration: `$env:AGENTX_PG_INTEGRATION="1"; pytest tests/integration -q`
 **Docs:**
 
 - `docs/concepts/vector-memory.md`, `docs/concepts/production-vector-memory.md`, `docs/concepts/memory-retrieval-ranking.md`
+- `docs/concepts/knowledge-graph-memory.md`
 
 ## Known limitations (accurate)
 
@@ -171,3 +176,4 @@ Run integration: `$env:AGENTX_PG_INTEGRATION="1"; pytest tests/integration -q`
 - **2026-10-08** — Vector memory v0.3 (code): PostgreSQL + pgvector (`PostgresMemoryRepository`, `PostgresMemoryStore`, `PgVectorStore`), migrations, Docker Compose, pooling, transactional manager, re-embed migrator + CLI, production doc. **Integration/benchmark verification pending** unless opt-in env is used.
 - **2026-10-10** — `PROJECT_STATUS.md` reconciled with repository audit; contradictions between v0.3 code and “in-memory only” limitations removed.
 - **2026-10-10** — v0.4: weighted memory ranking, hard eligibility, `confidence` field, retrieval diagnostics; docs `memory-retrieval-ranking.md`.
+- **2026-10-20** — v0.5 milestone 1: in-memory knowledge graph (`KnowledgeGraphStore`, BFS traversal, cycle-safe); `docs/concepts/knowledge-graph-memory.md`.

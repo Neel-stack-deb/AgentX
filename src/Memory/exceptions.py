@@ -31,3 +31,7 @@ class DatabaseUnavailableError(MemoryStoreError):
 
 class SchemaMigrationError(MemoryStoreError):
     pass
+
+
+class GraphEntityNotFoundError(MemoryStoreError):
+    pass
