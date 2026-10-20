@@ -76,7 +76,9 @@ class TransactionalPostgresMemoryManager(MemoryManager):
         embedding = self._embedding_provider.embed(memory.content)
         validate_provider_embedding(self._embedding_provider, embedding)
         record = self._build_index_record(memory, embedding)
-        return self._repository.update_memory_with_vector(memory, record)
+        updated = self._repository.update_memory_with_vector(memory, record)
+        self._notify_source_memory_changed(updated.memory_id)
+        return updated
 
     def delete(self, memory_id: str) -> bool:
         return self._repository.delete_memory(memory_id)
@@ -94,7 +96,9 @@ class TransactionalPostgresMemoryManager(MemoryManager):
         embedding = self._embedding_provider.embed(updated.content)
         validate_provider_embedding(self._embedding_provider, embedding)
         record = self._build_index_record(updated, embedding)
-        return self._repository.update_memory_with_vector(updated, record)
+        result = self._repository.update_memory_with_vector(updated, record)
+        self._notify_source_memory_changed(result.memory_id)
+        return result
 
     def _build_index_record(
         self, memory: Memory, embedding: list[float]

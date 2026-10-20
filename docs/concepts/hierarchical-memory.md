@@ -80,7 +80,7 @@ pytest tests/test_hierarchical_memory.py -q
 ## 7. Limitations
 
 - In-memory only; no Postgres table yet.
-- `MemoryManager.update` does not auto-mark summaries stale until integration milestone (explicit `mark_stale_for_memory` today).
+- When `MemoryManager` is constructed with `summary_store`, `update` / `touch_content` mark dependent summaries stale; use `invalidate_dependent_summaries` for explicit invalidation.
 - No background regeneration jobs.
 
 Future: hook summary invalidation into `MemoryManager.update`, optional summary generation, orchestrator context injection for overview intents.

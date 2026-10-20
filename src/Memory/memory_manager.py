@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from typing import TYPE_CHECKING
 
 from Memory.embedding_provider import EmbeddingProvider
 from Memory.embedding_validation import validate_provider_embedding
@@ -9,6 +10,10 @@ from Memory.memory_store import InMemoryMemoryStore, MemoryStore
 from Memory.retrieval import MemoryRetrievalFilter, VectorIndexMetadata, VectorIndexRecord
 from Memory.vector_store import InMemoryVectorStore, VectorStore
 from Types.Memory import Memory, MemoryStatus, MemoryType, ScoredMemory
+
+if TYPE_CHECKING:
+    from Memory.hierarchical.summary_store import HierarchicalSummaryStore
+    from Types.HierarchicalMemory import MemorySummary
 
 
 class MemoryManager:
@@ -24,10 +29,12 @@ class MemoryManager:
         vector_store: VectorStore | None = None,
         retriever: MemoryRetriever | None = None,
         ranking_config: RankingConfig | None = None,
+        summary_store: "HierarchicalSummaryStore | None" = None,
     ) -> None:
         self._embedding_provider = embedding_provider
         self._memory_store = memory_store or InMemoryMemoryStore()
         self._vector_store = vector_store or InMemoryVectorStore()
+        self._summary_store = summary_store
         self._ranking_config = ranking_config or RankingConfig()
         self._retriever = retriever or VectorMemoryRetriever(
             embedding_provider=self._embedding_provider,
@@ -123,6 +130,7 @@ class MemoryManager:
         embedding = self._embedding_provider.embed(updated.content)
         validate_provider_embedding(self._embedding_provider, embedding)
         self._index_memory(updated, embedding)
+        self._notify_source_memory_changed(updated.memory_id)
         return updated
 
     def delete(self, memory_id: str) -> bool:
@@ -160,7 +168,26 @@ class MemoryManager:
         updated = self._memory_store.update(updated)
         embedding = self._embedding_provider.embed(updated.content)
         self._index_memory(updated, embedding)
+        self._notify_source_memory_changed(updated.memory_id)
         return updated
+
+    def invalidate_dependent_summaries(self, memory_id: str) -> list["MemorySummary"]:
+        """
+        Mark summaries that cite ``memory_id`` as stale.
+
+        Use when repository change-tracking cannot detect updates automatically.
+        """
+        if self._summary_store is None:
+            return []
+        return self._summary_store.mark_stale_for_memory(memory_id)
+
+    def regenerate_summary(self, summary_id: str, new_content: str) -> "MemorySummary":
+        if self._summary_store is None:
+            raise RuntimeError("summary_store is not configured on MemoryManager")
+        return self._summary_store.regenerate(summary_id, new_content)
+
+    def _notify_source_memory_changed(self, memory_id: str) -> None:
+        self.invalidate_dependent_summaries(memory_id)
 
     def _index_memory(self, memory: Memory, embedding: list[float]) -> None:
         metadata = VectorIndexMetadata(

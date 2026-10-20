@@ -65,6 +65,7 @@
 | Knowledge graph memory (`InMemoryKnowledgeGraphStore`) | Done (v0.5 milestone 1) | Unit | `src/Memory/knowledge_graph/`, `Types/KnowledgeGraph.py`; not wired to `MemoryManager` yet. |
 | Hybrid memory (`HybridMemoryRetriever`) | Done (v0.5 milestone 2) | Unit | Vector retriever + graph BFS; `Types/HybridMemory.py`. |
 | Hierarchical summaries (`InMemoryHierarchicalSummaryStore`) | Done (v0.5 milestone 3) | Unit | Manual content; stale/regenerate in store; `HierarchicalMemoryRetriever`. |
+| Summary provenance / staleness on `MemoryManager` | Done (v0.5 milestone 4) | Unit | Optional `summary_store`; auto-stale on update; `invalidate_dependent_summaries`, `regenerate_summary`. |
 | BM25 / LLM rerank | Not started | — | Out of scope |
 
 ## Vector memory — current behavior
@@ -108,7 +109,7 @@ Command: `pytest` from repo root without `AGENTX_PG_INTEGRATION` / `AGENTX_RUN_B
 
 | Result | Count |
 |--------|------|
-| Passed | 49 |
+| Passed | 52 |
 | Skipped | 6 |
 | Failed | 0 |
 
@@ -180,3 +181,4 @@ Run integration: `$env:AGENTX_PG_INTEGRATION="1"; pytest tests/integration -q`
 - **2026-10-20** — v0.5 milestone 1: in-memory knowledge graph (`KnowledgeGraphStore`, BFS traversal, cycle-safe); `docs/concepts/knowledge-graph-memory.md`.
 - **2026-10-20** — v0.5 milestone 2: `HybridMemoryRetriever` (vector + graph, deduped ids); `docs/concepts/hybrid-memory.md`.
 - **2026-10-20** — v0.5 milestone 3: hierarchical summaries, staleness/regenerate in store; `docs/concepts/hierarchical-memory.md`.
+- **2026-10-20** — v0.5 milestone 4: `MemoryManager` summary staleness + regenerate; transactional postgres update hook.
